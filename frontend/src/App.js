@@ -26,7 +26,7 @@ import {
   UserManagementModal,
 } from "./AdminModals";
 
-const API = "http://127.0.0.1:5000";
+const API = process.env.REACT_APP_API_URL || "http://127.0.0.1:5000";
 
 export default function App() {
   // ─── View & Auth State ────────────────────────────────────────────────────
