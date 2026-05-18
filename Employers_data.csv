@@ -1,0 +1,101 @@
+Employee_ID,Name,Age,Gender,Department,Job_Title,Experience_Years,Education_Level,Location,Salary
+1,Merle Ingram,24,Female,Engineering,Engineer,1,Master,Austin,90000
+2,John Mayes,56,Male,Sales,Executive,33,Master,Seattle,195000
+3,Carlos Wille,21,Male,Engineering,Intern,1,Bachelor,New York,35000
+4,Michael Bryant,30,Male,Finance,Analyst,9,Bachelor,New York,75000
+5,Paula Douglas,25,Female,HR,Analyst,2,Master,Seattle,70000
+6,Michael Irving,35,Male,Finance,Manager,8,PhD,New York,125000
+7,Marcelle Campbell,23,Female,Marketing,Analyst,2,Bachelor,San Francisco,60000
+8,Glenda Leal,47,Female,Marketing,Manager,24,Master,San Francisco,145000
+9,Walter Williams,43,Male,Marketing,Manager,16,PhD,San Francisco,135000
+10,Vanessa Songer,23,Female,Marketing,Analyst,0,Master,San Francisco,70000
+11,Caitlin Mayhugh,24,Female,Product,Engineer,1,Master,New York,90000
+12,Peter Paris,23,Male,Product,Engineer,0,Master,Chicago,80000
+13,Lionel Elsea,48,Male,Product,Manager,21,PhD,Seattle,150000
+14,Alice Elvin,40,Female,Sales,Executive,13,PhD,Chicago,175000
+15,Carolyn Bell,59,Female,HR,Executive,32,PhD,Chicago,205000
+16,Robert Stewart,47,Male,Engineering,Manager,24,Master,New York,150000
+17,Josefina Johnson,57,Female,Finance,Executive,30,PhD,Seattle,195000
+18,Mary Abraham,44,Female,HR,Executive,21,Master,New York,175000
+19,Charles Williams,49,Male,Finance,Executive,26,Master,San Francisco,190000
+20,Michael Mccombs,48,Male,Marketing,Manager,21,PhD,Chicago,150000
+21,Janeen Crume,44,Female,Sales,Executive,21,Master,Chicago,170000
+22,Delores Parrish,24,Female,HR,Analyst,3,Bachelor,Seattle,70000
+23,Jim Blue,31,Male,Product,Engineer,8,Master,Chicago,95000
+24,Anthony Galvan,47,Male,Marketing,Manager,20,PhD,New York,150000
+25,Gregory Watts,28,Male,Engineering,Engineer,1,PhD,Chicago,90000
+26,Susan Kim,26,Female,Sales,Analyst,5,Bachelor,Seattle,75000
+27,Virginia Jean,47,Female,Sales,Executive,24,Master,New York,190000
+28,Latosha Steiner,53,Female,HR,Executive,26,PhD,Austin,190000
+29,Nathanael Nielsen,22,Male,Marketing,Analyst,1,Bachelor,Chicago,65000
+30,Ricky Tizon,43,Male,Marketing,Manager,16,PhD,Chicago,130000
+31,Doris Ardon,44,Female,Product,Manager,21,Master,Chicago,140000
+32,Elaine Pryor,23,Female,Finance,Analyst,0,Master,Seattle,65000
+33,Craig Nelson,46,Male,HR,Executive,19,PhD,Chicago,180000
+34,Estella Bynum,30,Female,HR,Analyst,7,Master,San Francisco,75000
+35,William Atherton,43,Male,Marketing,Manager,20,Master,New York,135000
+36,Joseph Brown,27,Male,Product,Engineer,0,PhD,Austin,85000
+37,Eric Brund,35,Male,Engineering,Manager,12,Master,New York,125000
+38,Deon Kidd,34,Male,Product,Manager,7,PhD,Seattle,120000
+39,Lisa Morris,22,Female,Sales,Analyst,1,Bachelor,San Francisco,70000
+40,Jay Anderson,25,Male,Finance,Analyst,4,Bachelor,Chicago,70000
+41,Lindsey Davila,44,Female,Engineering,Manager,21,Master,Seattle,145000
+42,Robert Boynton,32,Male,Product,Manager,9,Master,Austin,125000
+43,Gregory Stumpff,37,Male,HR,Manager,14,Master,San Francisco,130000
+44,Carol Waugh,45,Female,Engineering,Manager,22,Master,Chicago,145000
+45,John Bain,38,Male,Product,Engineer,15,Master,San Francisco,115000
+46,Christopher Harris,25,Male,Product,Engineer,2,Master,Seattle,90000
+47,Carla Ranieri,46,Female,Sales,Executive,19,PhD,San Francisco,185000
+48,Nathan Gonzalez,43,Male,Marketing,Manager,20,Master,Chicago,140000
+49,Betty Sellner,53,Female,Sales,Executive,30,Master,New York,195000
+50,Maria Isch,41,Female,Product,Manager,18,Master,Chicago,135000
+51,Jeremy Primus,34,Male,Finance,Manager,11,Master,Chicago,130000
+52,Tammy Alvarado,28,Female,HR,Analyst,7,Bachelor,Seattle,75000
+53,Kathleen Conner,39,Female,Engineering,Manager,12,PhD,Chicago,135000
+54,Michael Cantrell,37,Male,Marketing,Manager,14,Master,New York,125000
+55,William Lopez,39,Male,HR,Manager,16,Master,Chicago,130000
+56,Christine Carnevale,26,Female,Sales,Analyst,5,Bachelor,Chicago,70000
+57,Elizabeth Preister,45,Female,Finance,Manager,18,PhD,Austin,140000
+58,Mary Tillman,25,Female,Engineering,Intern,1,Bachelor,Chicago,35000
+59,Matthew Womack,24,Male,HR,Analyst,1,Master,Seattle,65000
+60,Patrick Gaylord,25,Male,Product,Engineer,4,Bachelor,Austin,85000
+61,Carson Hess,39,Male,Engineering,Engineer,16,Master,Seattle,115000
+62,Paula Linke,36,Female,HR,Executive,9,PhD,Austin,165000
+63,Cathy Griffin,46,Female,HR,Executive,23,Master,Seattle,180000
+64,Margaret Towne,37,Female,Finance,Executive,14,Master,San Francisco,165000
+65,Guillermo Daniels,38,Male,Product,Engineer,15,Master,New York,115000
+66,Terry Parks,30,Female,Finance,Analyst,9,Bachelor,Chicago,80000
+67,Curtis Matney,31,Male,Product,Engineer,10,Bachelor,New York,95000
+68,Raleigh Holmes,56,Male,HR,Executive,33,Master,New York,195000
+69,James Saleado,35,Male,Engineering,Manager,12,Master,New York,125000
+70,Brian Ferris,26,Male,Sales,Analyst,5,Bachelor,Seattle,75000
+71,Patricia Tuplano,24,Female,Engineering,Intern,0,Bachelor,Austin,30000
+72,Robert Jaynes,42,Male,Product,Manager,15,PhD,New York,140000
+73,Pilar Brittain,22,Female,Engineering,Intern,1,Bachelor,Austin,40000
+74,Enrique Daugherty,23,Male,HR,Analyst,2,Bachelor,Seattle,55000
+75,Amy Kennedy,34,Female,Finance,Manager,11,Master,New York,125000
+76,Rosalyn Wright,31,Female,Marketing,Manager,4,PhD,Seattle,115000
+77,Mark Scott,27,Male,Sales,Analyst,6,Bachelor,Austin,75000
+78,Mark Turner,34,Male,Engineering,Manager,11,Master,Chicago,125000
+79,Laura Ortiz,37,Female,Finance,Executive,10,PhD,Seattle,160000
+80,Irvin Hubbard,49,Male,Finance,Manager,22,PhD,New York,150000
+81,Robert Danielson,31,Male,Engineering,Manager,8,Master,San Francisco,125000
+82,Edgar Salinas,48,Male,Finance,Executive,21,PhD,New York,180000
+83,Jeremy Thompson,24,Male,Engineering,Intern,1,Bachelor,Austin,40000
+84,Lee Manning,29,Male,Finance,Analyst,8,Bachelor,San Francisco,75000
+85,Jennifer Herrera,54,Female,Sales,Executive,31,Master,Chicago,195000
+86,Ryan Hand,38,Male,Finance,Manager,15,Master,Seattle,135000
+87,Freddie Smith,42,Male,HR,Manager,19,Master,San Francisco,140000
+88,William Fetterolf,35,Male,HR,Manager,12,Master,New York,125000
+89,David Knowles,30,Male,HR,Manager,3,PhD,Austin,120000
+90,Peggy Campbell,40,Female,Product,Engineer,19,Bachelor,San Francisco,120000
+91,Janice Markis,32,Female,Engineering,Engineer,9,Master,San Francisco,105000
+92,Ted Peyton,49,Male,Engineering,Manager,26,Master,Seattle,150000
+93,Marcella Jose,30,Female,Product,Manager,7,Master,Austin,120000
+94,Winifred Miller,42,Female,Engineering,Manager,19,Master,Chicago,140000
+95,Christopher Johns,45,Male,Finance,Executive,18,PhD,San Francisco,180000
+96,William Kelly,29,Male,Marketing,Analyst,8,Bachelor,New York,70000
+97,Jeanette Sanpedro,30,Female,Product,Engineer,7,Master,San Francisco,105000
+98,Harold Infante,27,Male,Marketing,Analyst,6,Bachelor,Seattle,80000
+99,Mary Brown,33,Female,Engineering,Engineer,6,PhD,Austin,105000
+100,Susan Brown,49,Female,Sales,Executive,26,Master,Seattle,185000

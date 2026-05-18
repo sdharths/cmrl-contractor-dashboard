@@ -1,0 +1,8 @@
+flask
+flask-cors
+pymongo
+openpyxl
+python-dotenv
+gunicorn
+pandas
+werkzeug
