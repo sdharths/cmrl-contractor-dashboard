@@ -447,8 +447,6 @@ export function UserManagementModal({
   const [isGranting, setIsGranting] = React.useState(false);
 
   const [pendingChanges, setPendingChanges] = React.useState({});
-  const [sortField, setSortField] = React.useState("none"); // "none" | "view" | "edit"
-  const [sortOrder, setSortOrder] = React.useState("desc"); // "asc" | "desc"
   const [userSearchTerm, setUserSearchTerm] = React.useState("");
   const [roleFilter, setRoleFilter] = React.useState("all"); // "all" | "user" | "admin" | "super_admin"
   
@@ -588,15 +586,6 @@ export function UserManagementModal({
       const matchesRole = roleFilter === "all" || u.role === roleFilter;
       
       return matchesSearch && matchesRole;
-    })
-    .sort((a, b) => {
-      if (sortField === "view") {
-        return sortOrder === "desc" ? (b.view_count || 0) - (a.view_count || 0) : (a.view_count || 0) - (b.view_count || 0);
-      }
-      if (sortField === "edit") {
-        return sortOrder === "desc" ? (b.edit_count || 0) - (a.edit_count || 0) : (a.edit_count || 0) - (b.edit_count || 0);
-      }
-      return 0;
     });
 
   return (
@@ -639,27 +628,8 @@ export function UserManagementModal({
                 </select>
               </div>
 
-              {/* View toggle and Sorting */}
+              {/* View toggle */}
               <div className="user-mgmt-controls">
-                <div className="user-sort-wrapper">
-                  <span className="user-sort-label">Sort by:</span>
-                  <select 
-                    className="edit-input" 
-                    style={{ padding: "4px 8px", height: "32px", fontSize: "0.85rem", width: "160px" }}
-                    value={`${sortField}-${sortOrder}`}
-                    onChange={(e) => {
-                      const [field, order] = e.target.value.split("-");
-                      setSortField(field);
-                      setSortOrder(order);
-                    }}
-                  >
-                    <option value="none-desc">Default</option>
-                    <option value="view-desc">Most View Access</option>
-                    <option value="view-asc">Least View Access</option>
-                    <option value="edit-desc">Most Edit Access</option>
-                    <option value="edit-asc">Least Edit Access</option>
-                  </select>
-                </div>
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button
                     className="btn-secondary"
@@ -715,17 +685,7 @@ export function UserManagementModal({
                         <div style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{u.email}</div>
                       </div>
 
-                      {/* Access Indicators */}
-                      <div className="user-access-stats">
-                        <div title="View Accesses" className="stat-badge view">
-                          <span>👁️</span>
-                          <span>{u.view_count || 0}</span>
-                        </div>
-                        <div title="Edit Accesses" className="stat-badge edit">
-                          <span>✏️</span>
-                          <span>{u.edit_count || 0}</span>
-                        </div>
-                      </div>
+
                       
                       {currentUser?.role === "super_admin" && u.role !== "super_admin" && (
                         <button
@@ -803,17 +763,7 @@ export function UserManagementModal({
                       </div>
                       <div onClick={() => loadUserAccess(u)} style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginTop: "3px", wordBreak: "break-all" }}>{u.email}</div>
                       
-                      {/* Access Indicators Matrix */}
-                      <div className="user-access-stats">
-                        <div title="View Accesses" className="stat-badge view">
-                          <span>👁️</span>
-                          <span>{u.view_count || 0}</span>
-                        </div>
-                        <div title="Edit Accesses" className="stat-badge edit">
-                          <span>✏️</span>
-                          <span>{u.edit_count || 0}</span>
-                        </div>
-                      </div>
+
                       
                       {currentUser?.role === "super_admin" && u.role !== "super_admin" && (
                         <button
