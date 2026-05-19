@@ -15,6 +15,18 @@ export function AccessModal({
 }) {
   const [selectedUserIds, setSelectedUserIds] = React.useState([]);
   const [userSearch, setUserSearch] = React.useState("");
+  const [dropdownOpen, setDropdownOpen] = React.useState(false);
+  const dropdownRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    if (dropdownOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [dropdownOpen]);
 
   if (!show) return null;
 
@@ -54,53 +66,103 @@ export function AccessModal({
             <>
               <div style={{ marginBottom: "20px", borderBottom: "1px solid var(--border-light)", paddingBottom: "20px" }}>
                 <h4 style={{ marginTop: 0 }}>Grant / Revoke Multiple Users</h4>
-                
-                <div className="bulk-user-selector" style={{ 
-                  border: "1px solid var(--border-light)", 
-                  borderRadius: "8px", 
-                  padding: "10px",
-                  background: "var(--panel-bg)",
-                  marginBottom: "15px"
-                }}>
-                  <div style={{ position: "relative", marginBottom: "10px" }}>
-                    <span style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }}>🔍</span>
-                    <input 
-                      type="text" 
-                      placeholder="Search users to select..." 
-                      className="edit-input" 
-                      style={{ paddingLeft: "35px", width: "100%", height: "36px", fontSize: "0.9rem" }}
-                      value={userSearch}
-                      onChange={(e) => setUserSearch(e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="user-checkbox-list" style={{ 
-                    maxHeight: "150px", 
-                    overflowY: "auto", 
-                    padding: "5px"
-                  }}>
-                    {filteredUsers.map(u => (
-                      <label key={u._id} style={{ 
-                        display: "flex", 
-                        alignItems: "center", 
-                        gap: "10px", 
-                        padding: "6px 8px", 
-                        cursor: "pointer",
-                        borderRadius: "4px",
-                        background: selectedUserIds.includes(u._id) ? "var(--hover-bg)" : "transparent"
-                      }}>
-                        <input 
-                          type="checkbox" 
-                          checked={selectedUserIds.includes(u._id)}
-                          onChange={() => toggleUserSelection(u._id)}
+
+                {/* ── Custom multi-select dropdown ── */}
+                <div ref={dropdownRef} style={{ position: "relative", marginBottom: "15px" }}>
+                  {/* Trigger button */}
+                  <button
+                    type="button"
+                    onClick={() => setDropdownOpen(o => !o)}
+                    style={{
+                      width: "100%", display: "flex", justifyContent: "space-between",
+                      alignItems: "center", padding: "8px 12px",
+                      border: "1px solid var(--border-light)", borderRadius: "8px",
+                      background: "var(--panel-bg)", color: "var(--color-text-main)",
+                      cursor: "pointer", fontSize: "0.9rem",
+                      boxShadow: dropdownOpen ? "0 0 0 2px var(--primary-color)" : "none",
+                      transition: "box-shadow 0.15s"
+                    }}
+                  >
+                    <span>
+                      {selectedUserIds.length === 0
+                        ? "Select users…"
+                        : `${selectedUserIds.length} user${selectedUserIds.length > 1 ? "s" : ""} selected`}
+                    </span>
+                    <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>{dropdownOpen ? "▲" : "▼"}</span>
+                  </button>
+
+                  {/* Dropdown panel */}
+                  {dropdownOpen && (
+                    <div style={{
+                      position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0,
+                      zIndex: 9999, background: "var(--panel-bg)",
+                      border: "1px solid var(--border-light)", borderRadius: "8px",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.15)", overflow: "hidden"
+                    }}>
+                      {/* Search inside dropdown */}
+                      <div style={{ padding: "10px 10px 6px", borderBottom: "1px solid var(--border-light)", position: "relative" }}>
+                        <span style={{ position: "absolute", left: "20px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", fontSize: "0.85rem" }}>🔍</span>
+                        <input
+                          type="text"
+                          placeholder="Search users…"
+                          className="edit-input"
+                          autoFocus
+                          style={{ paddingLeft: "32px", width: "100%", height: "34px", fontSize: "0.85rem" }}
+                          value={userSearch}
+                          onChange={(e) => setUserSearch(e.target.value)}
                         />
-                        <span style={{ fontSize: "0.9rem", color: "var(--color-text-main)" }}>
-                          {u.name || u.username} ({u.email})
-                        </span>
+                      </div>
+
+                      {/* Select All row */}
+                      <label style={{
+                        display: "flex", alignItems: "center", gap: "10px",
+                        padding: "8px 12px", cursor: "pointer",
+                        borderBottom: "1px solid var(--border-light)",
+                        background: "var(--hover-bg)", fontSize: "0.85rem",
+                        fontWeight: "600", color: "var(--primary-color)"
+                      }}>
+                        <input
+                          type="checkbox"
+                          checked={filteredUsers.length > 0 && filteredUsers.every(u => selectedUserIds.includes(u._id))}
+                          onChange={() => {
+                            const allSelected = filteredUsers.every(u => selectedUserIds.includes(u._id));
+                            if (allSelected) {
+                              setSelectedUserIds(prev => prev.filter(id => !filteredUsers.find(u => u._id === id)));
+                            } else {
+                              setSelectedUserIds(prev => [...new Set([...prev, ...filteredUsers.map(u => u._id)])]);
+                            }
+                          }}
+                        />
+                        Select All{filteredUsers.length !== usersList.length ? ` (${filteredUsers.length} shown)` : ""}
                       </label>
-                    ))}
-                    {filteredUsers.length === 0 && <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", textAlign: "center" }}>No users found.</p>}
-                  </div>
+
+                      {/* User checklist */}
+                      <div style={{ maxHeight: "200px", overflowY: "auto" }}>
+                        {filteredUsers.length === 0 ? (
+                          <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", textAlign: "center", padding: "14px" }}>No users found.</p>
+                        ) : (
+                          filteredUsers.map(u => (
+                            <label key={u._id} style={{
+                              display: "flex", alignItems: "center", gap: "10px",
+                              padding: "8px 12px", cursor: "pointer",
+                              background: selectedUserIds.includes(u._id) ? "var(--hover-bg)" : "transparent",
+                              transition: "background 0.1s"
+                            }}>
+                              <input
+                                type="checkbox"
+                                checked={selectedUserIds.includes(u._id)}
+                                onChange={() => toggleUserSelection(u._id)}
+                              />
+                              <span style={{ fontSize: "0.88rem", color: "var(--color-text-main)" }}>
+                                {u.name || u.username}
+                                <span style={{ color: "var(--text-muted)", marginLeft: "6px", fontSize: "0.8rem" }}>({u.email})</span>
+                              </span>
+                            </label>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
