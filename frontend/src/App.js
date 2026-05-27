@@ -25,6 +25,7 @@ import {
   DownloadRequestsModal,
   UserManagementModal,
 } from "./AdminModals";
+import BillingView from "./BillingView";
 
 const API = process.env.REACT_APP_API_URL || "http://127.0.0.1:5000";
 
@@ -210,7 +211,7 @@ export default function App() {
       }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [currentView]);
+  }, [currentView, currentUser?.role]);
 
   useEffect(() => {
     if (currentUser) {
@@ -279,16 +280,41 @@ export default function App() {
         const res = await axios.get(`${API}/file/user_notifications?user_id=${user.id}`);
         setUserApprovedCount(res.data.approved_count);
         setUserRejectedCount(res.data.rejected_count || 0);
-        setNewlyGrantedFiles(res.data.newly_granted_access || []);
+        setNewlyGrantedFiles((res.data.newly_granted_access || []).map(g => g.file_id));
         setNewlyRejectedFiles((res.data.rejected_requests || []).map(r => r.file_id));
         
-        if (res.data.rejected_count > 0) {
-          const firstRej = res.data.rejected_requests[0];
-          setNotification({
-            show: true,
-            message: `Your request for ${firstRej.filename} was rejected. ${firstRej.reason ? "Reason: " + firstRej.reason : ""}`,
-            type: "danger"
-          });
+        const approvedCount = res.data.approved_count || 0;
+        const rejectedCount = res.data.rejected_count || 0;
+        
+        if (approvedCount > 0 || rejectedCount > 0) {
+          let messages = [];
+          
+          // 1. Handle Approvals (Grants)
+          const newlyGranted = res.data.newly_granted_access || [];
+          if (newlyGranted.length > 0) {
+            messages.push("🟢 Access Approved:");
+            newlyGranted.forEach(grant => {
+              messages.push(`  • ${grant.filename || "a document"}`);
+            });
+          }
+          
+          // 2. Handle Rejections
+          const rejectedRequests = res.data.rejected_requests || [];
+          if (rejectedRequests.length > 0) {
+            if (messages.length > 0) messages.push(""); // spacer line
+            messages.push("❌ Access Rejected:");
+            rejectedRequests.forEach(rej => {
+              messages.push(`  • ${rej.filename}${rej.reason ? ` (Reason: ${rej.reason})` : ""}`);
+            });
+          }
+          
+          if (messages.length > 0) {
+            setNotification({
+              show: true,
+              message: messages.join("\n"),
+              type: rejectedCount > 0 ? "danger" : "success"
+            });
+          }
         }
       }
     } catch (err) {
@@ -724,7 +750,7 @@ export default function App() {
 
   const approveAllAccessRequests = async (permission = "view") => {
     try {
-      const res = await axios.post(`${API}/file/access_requests/approve_all`, { permission });
+      await axios.post(`${API}/file/access_requests/approve_all`, { permission });
       showNotify("All pending access requests have been approved successfully!");
       fetchFiles();
       fetchRequestCounts();
@@ -1152,6 +1178,14 @@ export default function App() {
               </button>
             </>
           )}
+          {/* Billing Status Navigation (Available to all users) */}
+          <button 
+            className={`sidebar-btn ${currentView === "billing" ? "active" : ""}`} 
+            onClick={() => { closeAllModals(); setCurrentView("billing"); }} 
+            title="Billing Status"
+          >
+            <span className="icon">💳</span><span className="label">Billing Status</span>
+          </button>
           {/* Inbox Messaging Navigation (Available to all users) */}
           <button 
             className={`sidebar-btn communication-btn ${showInboxModal ? "active" : ""}`} 
@@ -1253,6 +1287,22 @@ export default function App() {
             sortConfig={sortConfig}
             activeColorFilters={activeColorFilters}
             setActiveColorFilters={setActiveColorFilters}
+          />
+        )}
+
+        {/* ── Billing Page ── */}
+        {currentView === "billing" && (
+          <BillingView
+            currentUser={currentUser}
+            API={API}
+            onOpenInbox={(prefillText) => {
+              closeAllModals();
+              // Prefill email template query since standard inbox limits messages for users
+              const email = "support@cmrl.in";
+              const subject = "Billing Status Inquiry";
+              window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(prefillText)}`;
+            }}
+            showNotify={showNotify}
           />
         )}
       </div>
@@ -1390,7 +1440,7 @@ function NotificationModal({ show, message, type = "success", onClose }) {
         <h3 style={{ margin: "20px 0 10px", color: isSuccess ? "var(--color-title-main)" : "#ef4444" }}>
           {title}
         </h3>
-        <p style={{ color: "var(--color-text-subtitle)", marginBottom: "25px" }}>{message}</p>
+        <p style={{ color: "var(--color-text-subtitle)", marginBottom: "25px", whiteSpace: "pre-line", textAlign: "left", padding: "0 10px", lineHeight: "1.5" }}>{message}</p>
         <button 
           className={isSuccess ? "btn-primary" : "btn-secondary"} 
           onClick={onClose}

@@ -29,7 +29,34 @@ access_requests_collection = db["access_requests"]
 download_requests_collection = db["download_requests"]
 download_access_collection = db["download_access"]
 archives_collection = db["archives"]
+billing_status_collection = db["billing_status"]
 
+# Seed billing status if empty from local Excel
+def seed_billing_data():
+    try:
+        if billing_status_collection.count_documents({}) == 0:
+            excel_path = "../Billing Status_11022026.xlsx"
+            if not os.path.exists(excel_path):
+                excel_path = "Billing Status_11022026.xlsx"
+            if os.path.exists(excel_path):
+                print("Seeding billing status database from Excel...")
+                if excel_path.endswith(".csv"):
+                    df = pd.read_csv(excel_path)
+                else:
+                    df = pd.read_excel(excel_path)
+                
+                df.columns = [str(col).replace(".", "_").replace("$", "_") for col in df.columns]
+                df = df.fillna("")
+                records = json.loads(df.to_json(orient="records", date_format="iso"))
+                if records:
+                    billing_status_collection.insert_many(records)
+                    print(f"Successfully seeded {len(records)} billing records!")
+            else:
+                print("Billing Status Excel file not found. Skipping auto-seed.")
+    except Exception as e:
+        print("Error seeding billing status:", e)
+
+seed_billing_data()
 SUPER_ADMIN_EMAILS = ["nidhims202006@gmail.com","sidadmin@gmail.com"]#password is passadmin
 ADMIN_EMAILS = [""] # Existing hardcoded admins if any, or just move to DB
 # ---------------- HEALTH CHECK ----------------
@@ -882,13 +909,13 @@ def get_user_notifications():
         rej_reqs = list(access_requests_collection.find({"user_id": user_id, "status": "rejected", "dismissed": {"$ne": True}}))
         dl_count = download_requests_collection.count_documents({"user_id": user_id, "status": "approved", "dismissed": {"$ne": True}})
         
-        acc_file_ids = [str(r["file_id"]) for r in acc_reqs]
+        acc_data = [{"file_id": str(r["file_id"]), "filename": r.get("filename", "a document")} for r in acc_reqs]
         rej_data = [{"file_id": str(r["file_id"]), "filename": r.get("filename"), "reason": r.get("rejection_reason", "")} for r in rej_reqs]
         
         return jsonify({
             "approved_count": len(acc_reqs) + dl_count,
             "rejected_count": len(rej_reqs),
-            "newly_granted_access": acc_file_ids,
+            "newly_granted_access": acc_data,
             "rejected_requests": rej_data
         })
     except Exception as e:
@@ -1198,6 +1225,113 @@ def read_message():
 
         return jsonify({"msg": "Message marked as read"}), 200
 
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# Helper to match company to user
+def user_matches_company(user, company_name):
+    if not company_name:
+        return False
+    company_lower = str(company_name).lower().strip()
+    
+    user_company = user.get("company")
+    if user_company and str(user_company).lower().strip() == company_lower:
+        return True
+        
+    user_username = user.get("username")
+    if user_username and str(user_username).lower().strip() == company_lower:
+        return True
+        
+    user_email = user.get("email")
+    if user_email:
+        email_lower = str(user_email).lower().strip()
+        if company_lower in email_lower:
+            return True
+    return False
+
+@app.route("/billing/status", methods=["GET"])
+def get_billing_status():
+    try:
+        user_id = request.args.get("user_id")
+        if not user_id:
+            return jsonify({"error": "Missing user_id"}), 400
+            
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+            
+        role = user.get("role", "user")
+        all_records = list(billing_status_collection.find({}))
+        
+        for doc in all_records:
+            doc["_id"] = str(doc["_id"])
+            
+        if role in ["admin", "super_admin"]:
+            return jsonify(all_records)
+        else:
+            # Contractor scoping: return only matching records
+            matched_records = [r for r in all_records if user_matches_company(user, r.get("Company"))]
+            return jsonify(matched_records)
+            
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/billing/update", methods=["POST"])
+def update_billing_cell():
+    try:
+        payload = request.json
+        row_id = payload.get("id")
+        field = payload.get("field")
+        value = payload.get("value")
+        
+        if not row_id or not field:
+            return jsonify({"error": "Missing required fields"}), 400
+            
+        billing_status_collection.update_one(
+            {"_id": ObjectId(row_id)},
+            {"$set": {field: value}}
+        )
+        return jsonify({"msg": "Billing cell updated successfully"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/billing/upload", methods=["POST"])
+def upload_billing_sheet():
+    try:
+        if "file" not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
+            
+        file = request.files["file"]
+        if file.filename == "":
+            return jsonify({"error": "Empty filename"}), 400
+            
+        if file.filename.endswith(".csv"):
+            df = pd.read_csv(file)
+        else:
+            df = pd.read_excel(file)
+            
+        df.columns = [str(col).replace(".", "_").replace("$", "_") for col in df.columns]
+        df = df.fillna("")
+        records = json.loads(df.to_json(orient="records", date_format="iso"))
+        
+        if records:
+            for record in records:
+                query = {}
+                if record.get("Efile No"):
+                    query = {"Efile No": record["Efile No"]}
+                elif record.get("Company"):
+                    query = {"Company": record["Company"]}
+                else:
+                    billing_status_collection.insert_one(record)
+                    continue
+                
+                # Merge the new row, updating existing or inserting if new
+                billing_status_collection.update_one(
+                    query,
+                    {"$set": record},
+                    upsert=True
+                )
+        return jsonify({"msg": "Billing database re-synchronized successfully"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
