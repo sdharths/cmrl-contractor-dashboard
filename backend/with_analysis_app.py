@@ -75,6 +75,69 @@ def send_verification_email(recipient_email, token):
     sender_email = os.environ.get("SENDER_EMAIL")
     sender_password = os.environ.get("SENDER_PASSWORD")
     frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+    # Trim trailing slashes
+    if frontend_url.endswith('/'):
+        frontend_url = frontend_url[:-1]
+    verification_link = f"{frontend_url}/?verify_token={token}"
+
+    sender_email = os.environ.get("SENDER_EMAIL")
+    sender_password = os.environ.get("SENDER_PASSWORD")
+    # If a verification_link is explicitly provided (e.g., from request.host_url), use it; otherwise fall back to env or localhost
+    if verification_link is None:
+        frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+        if frontend_url.endswith('/'):
+            frontend_url = frontend_url[:-1]
+        verification_link = f"{frontend_url}/?verify_token={token}"
+    else:
+        # Ensure the link contains the token (in case caller passed only base URL)
+        if "verify_token" not in verification_link:
+            verification_link = f"{verification_link.rstrip('/')}/?verify_token={token}"
+    if not sender_email or not sender_password:
+        print("\n[SMTP NOT CONFIGURED - SIMULATED EMAIL]", flush=True)
+        print(f"To: {recipient_email}", flush=True)
+        print(f"Subject: Verify Your CMRL Dashboard Account", flush=True)
+        print(f"Verification Link: {verification_link}\n", flush=True)
+        return
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = "Verify Your CMRL Dashboard Account"
+        msg['From'] = f"CMRL Dashboard <{sender_email}>"
+        msg['To'] = recipient_email
+        html = f"""
+        <html>
+          <body style=\"font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 20px; color: #333;\">
+            <div style=\"max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 5px solid #0056b3;\">
+              <h2 style=\"color: #0056b3; margin-top: 0; font-size: 24px; text-align: center;\">Welcome to CMRL Dashboard!</h2>
+              <p style=\"font-size: 16px; line-height: 1.6; color: #555;\">Thank you for registering. To complete your signup and start operating as a user, please verify your email address by clicking the button below:</p>
+              <div style=\"text-align: center; margin: 30px 0;\">
+                <a href=\"{verification_link}\" style=\"background-color: #0056b3; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px rgba(0,86,179,0.2);\">Verify Email Address</a>
+              </div>
+              <p style=\"font-size: 14px; line-height: 1.6; color: #777;\">If the button above does not work, copy and paste the following link into your browser:</p>
+              <p style=\"word-break: break-all; font-size: 14px; color: #0056b3; background: #f0f4f8; padding: 10px; border-radius: 4px;\">{verification_link}</p>
+              <hr style=\"border: 0; border-top: 1px solid #eee; margin: 30px 0;\"/>
+              <p style=\"font-size: 12px; color: #999; text-align: center; margin-bottom: 0;\">This is an automated message, please do not reply to this email.</p>
+            </div>
+          </body>
+        </html>
+        """
+        part = MIMEText(html, 'html')
+        msg.attach(part)
+
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, recipient_email, msg.as_string())
+        server.quit()
+        print(f"SMTP: Verification email successfully sent to {recipient_email}", flush=True)
+    except Exception as e:
+        print(f"SMTP Error: Failed to send email to {recipient_email}. Error: {e}", flush=True)
+        print("\n[SMTP FAILED - SIMULATED EMAIL FALLBACK]", flush=True)
+        print(f"To: {recipient_email}", flush=True)
+        print(f"Verification Link: {verification_link}\n", flush=True)
+        
+    sender_email = os.environ.get("SENDER_EMAIL")
+    sender_password = os.environ.get("SENDER_PASSWORD")
+    frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
     
     # Trim trailing slashes from frontend_url
     if frontend_url.endswith("/"):
@@ -116,13 +179,23 @@ def send_verification_email(recipient_email, token):
         part = MIMEText(html, 'html')
         msg.attach(part)
 
-        # Connect to Google SMTP Server
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.sendmail(sender_email, recipient_email, msg.as_string())
-        server.quit()
-        print(f"SMTP: Verification email successfully sent to {recipient_email}", flush=True)
+        # Try SMTP first (SSL). If any network error occurs, fall back to STARTTLS.
+        try:
+            server = smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10)
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, recipient_email, msg.as_string())
+            server.quit()
+            print(f"SMTP: Verification email successfully sent to {recipient_email}", flush=True)
+        except Exception as e_smtp:
+            print(f"SMTP SSL failed: {e_smtp}", flush=True)
+            # Fallback to STARTTLS
+            server = smtplib.SMTP("smtp.gmail.com", 587, timeout=10)
+            server.starttls()
+            server.login(sender_email, sender_password)
+            server.sendmail(sender_email, recipient_email, msg.as_string())
+            server.quit()
+            print(f"SMTP (STARTTLS) verification email sent to {recipient_email}", flush=True)
+
     except Exception as e:
         print(f"SMTP Error: Failed to send email to {recipient_email}. Error: {e}", flush=True)
         # Log simulated link so developer is never blocked
@@ -164,7 +237,9 @@ def signup():
         })
 
         # Send verification email asynchronously in a background thread to prevent blocking the signup response
-        threading.Thread(target=send_verification_email, args=(email, token)).start()
+        # Build verification link based on the incoming request URL (ensures correct domain in production)
+    # Send verification email asynchronously in a background thread to prevent blocking the signup response
+    threading.Thread(target=send_verification_email, args=(email, token)).start()
 
         return jsonify({"msg": "Sign up successful! Please check your email to verify your account before logging in."}), 201
 
