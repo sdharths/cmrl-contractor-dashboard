@@ -83,10 +83,10 @@ def send_verification_email(recipient_email, token):
     verification_link = f"{frontend_url}/?verify_token={token}"
 
     if not sender_email or not sender_password:
-        print(f"\n[SMTP NOT CONFIGURED - SIMULATED EMAIL]")
-        print(f"To: {recipient_email}")
-        print(f"Subject: Verify Your CMRL Dashboard Account")
-        print(f"Verification Link: {verification_link}\n")
+        print(f"\n[SMTP NOT CONFIGURED - SIMULATED EMAIL]", flush=True)
+        print(f"To: {recipient_email}", flush=True)
+        print(f"Subject: Verify Your CMRL Dashboard Account", flush=True)
+        print(f"Verification Link: {verification_link}\n", flush=True)
         return
 
     try:
@@ -122,13 +122,13 @@ def send_verification_email(recipient_email, token):
         server.login(sender_email, sender_password)
         server.sendmail(sender_email, recipient_email, msg.as_string())
         server.quit()
-        print(f"SMTP: Verification email successfully sent to {recipient_email}")
+        print(f"SMTP: Verification email successfully sent to {recipient_email}", flush=True)
     except Exception as e:
-        print(f"SMTP Error: Failed to send email to {recipient_email}. Error: {e}")
+        print(f"SMTP Error: Failed to send email to {recipient_email}. Error: {e}", flush=True)
         # Log simulated link so developer is never blocked
-        print(f"\n[SMTP FAILED - SIMULATED EMAIL FALLBACK]")
-        print(f"To: {recipient_email}")
-        print(f"Verification Link: {verification_link}\n")
+        print(f"\n[SMTP FAILED - SIMULATED EMAIL FALLBACK]", flush=True)
+        print(f"To: {recipient_email}", flush=True)
+        print(f"Verification Link: {verification_link}\n", flush=True)
 
 # ---------------- AUTHENTICATION ----------------
 @app.route("/signup", methods=["POST"])
