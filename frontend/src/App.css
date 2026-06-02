@@ -2539,3 +2539,192 @@ input[type="file"] {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+/* ==========================================================================
+   EMAIL VERIFICATION SYSTEM STYLES
+   ========================================================================== */
+
+.verification-card {
+  max-width: 480px;
+  width: 90%;
+  padding: 40px;
+  text-align: center;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.15) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-theme='dark'] .verification-card {
+  background: rgba(15, 23, 42, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+.verification-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.verification-title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-top: 20px;
+  margin-bottom: 12px;
+  letter-spacing: -0.5px;
+}
+
+.verification-title.text-success {
+  color: #10b981 !important;
+}
+
+.verification-title.text-danger {
+  color: #ef4444 !important;
+}
+
+.verification-desc {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 25px;
+}
+
+[data-theme='dark'] .verification-desc {
+  color: rgba(226, 232, 240, 0.85);
+}
+
+/* Modern Gradient Spinner */
+.modern-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  border-top: 4px solid #0056b3;
+  border-right: 4px solid #00c6ff;
+  animation: spin 1s linear infinite;
+  box-shadow: 0 0 15px rgba(0, 198, 255, 0.2);
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Success Checkmark Animation */
+.success-icon-wrapper {
+  margin-bottom: 10px;
+}
+
+.checkmark {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 2;
+  stroke: #10b981;
+  stroke-miterlimit: 10;
+  box-shadow: inset 0 0 0 #10b981;
+  animation: fillGreen .4s ease-in-out .4s forwards, scaleUp .3s ease-in-out .9s both;
+}
+
+.checkmark__circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 2;
+  stroke-miterlimit: 10;
+  stroke: #10b981;
+  fill: none;
+  animation: strokeCircle .6s cubic-bezier(0.650, 0.000, 0.450, 1.000) forwards;
+}
+
+.checkmark__check {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: strokeCheck .3s cubic-bezier(0.650, 0.000, 0.450, 1.000) .6s forwards;
+}
+
+/* Error Crossmark Animation */
+.error-icon-wrapper {
+  margin-bottom: 10px;
+}
+
+.crossmark {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: block;
+  stroke-width: 2;
+  stroke: #ef4444;
+  stroke-miterlimit: 10;
+  box-shadow: inset 0 0 0 #ef4444;
+  animation: fillRed .4s ease-in-out .4s forwards, scaleUp .3s ease-in-out .9s both;
+}
+
+.crossmark__circle {
+  stroke-dasharray: 166;
+  stroke-dashoffset: 166;
+  stroke-width: 2;
+  stroke-miterlimit: 10;
+  stroke: #ef4444;
+  fill: none;
+  animation: strokeCircle .6s cubic-bezier(0.650, 0.000, 0.450, 1.000) forwards;
+}
+
+.crossmark__cross {
+  transform-origin: 50% 50%;
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: strokeCheck .3s cubic-bezier(0.650, 0.000, 0.450, 1.000) .6s forwards;
+}
+
+.btn-danger-verify {
+  background-color: #ef4444 !important;
+  border-color: #ef4444 !important;
+}
+
+.btn-danger-verify:hover {
+  background-color: #dc2626 !important;
+  border-color: #dc2626 !important;
+}
+
+/* Keyframes */
+@keyframes strokeCircle {
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes strokeCheck {
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes fillGreen {
+  100% { box-shadow: inset 0 0 0 40px rgba(16, 185, 129, 0.1); }
+}
+
+@keyframes fillRed {
+  100% { box-shadow: inset 0 0 0 40px rgba(239, 68, 68, 0.1); }
+}
+
+@keyframes scaleUp {
+  0%, 100% { transform: none; }
+  50% { transform: scale3d(1.1, 1.1, 1); }
+}
+
+.animate-fade-in {
+  animation: fadeInEffect 0.5s ease-out forwards;
+}
+
+@keyframes fadeInEffect {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+

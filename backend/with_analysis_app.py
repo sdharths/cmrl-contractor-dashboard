@@ -9,6 +9,12 @@ from bson import ObjectId
 from datetime import datetime
 import json
 from werkzeug.security import generate_password_hash, check_password_hash
+import secrets
+import smtplib
+import threading
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
 
 load_dotenv()
 
@@ -64,6 +70,66 @@ ADMIN_EMAILS = [""] # Existing hardcoded admins if any, or just move to DB
 def home():
     return "Backend running ✅"
 
+# ---------------- EMAIL VERIFICATION HELPERS ----------------
+def send_verification_email(recipient_email, token):
+    sender_email = os.environ.get("SENDER_EMAIL")
+    sender_password = os.environ.get("SENDER_PASSWORD")
+    frontend_url = os.environ.get("FRONTEND_URL", "http://localhost:3000")
+    
+    # Trim trailing slashes from frontend_url
+    if frontend_url.endswith("/"):
+        frontend_url = frontend_url[:-1]
+        
+    verification_link = f"{frontend_url}/?verify_token={token}"
+
+    if not sender_email or not sender_password:
+        print(f"\n[SMTP NOT CONFIGURED - SIMULATED EMAIL]")
+        print(f"To: {recipient_email}")
+        print(f"Subject: Verify Your CMRL Dashboard Account")
+        print(f"Verification Link: {verification_link}\n")
+        return
+
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = "Verify Your CMRL Dashboard Account"
+        msg['From'] = f"CMRL Dashboard <{sender_email}>"
+        msg['To'] = recipient_email
+
+        html = f"""
+        <html>
+          <body style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; padding: 20px; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 5px solid #0056b3;">
+              <h2 style="color: #0056b3; margin-top: 0; font-size: 24px; text-align: center;">Welcome to CMRL Dashboard!</h2>
+              <p style="font-size: 16px; line-height: 1.6; color: #555;">Thank you for registering. To complete your signup and start operating as a user, please verify your email address by clicking the button below:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="{verification_link}" style="background-color: #0056b3; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; box-shadow: 0 4px 6px rgba(0,86,179,0.2);">Verify Email Address</a>
+              </div>
+              <p style="font-size: 14px; line-height: 1.6; color: #777;">If the button above does not work, copy and paste the following link into your browser:</p>
+              <p style="word-break: break-all; font-size: 14px; color: #0056b3; background: #f0f4f8; padding: 10px; border-radius: 4px;">{verification_link}</p>
+              <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+              <p style="font-size: 12px; color: #999; text-align: center; margin-bottom: 0;">This is an automated message, please do not reply to this email.</p>
+            </div>
+          </body>
+        </html>
+        """
+        
+        part = MIMEText(html, 'html')
+        msg.attach(part)
+
+        # Connect to Google SMTP Server
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.sendmail(sender_email, recipient_email, msg.as_string())
+        server.quit()
+        print(f"SMTP: Verification email successfully sent to {recipient_email}")
+    except Exception as e:
+        print(f"SMTP Error: Failed to send email to {recipient_email}. Error: {e}")
+        # Log simulated link so developer is never blocked
+        print(f"\n[SMTP FAILED - SIMULATED EMAIL FALLBACK]")
+        print(f"To: {recipient_email}")
+        print(f"Verification Link: {verification_link}\n")
+
 # ---------------- AUTHENTICATION ----------------
 @app.route("/signup", methods=["POST"])
 def signup():
@@ -87,14 +153,20 @@ def signup():
             role = "user"
         
         hashed_pw = generate_password_hash(password)
+        token = secrets.token_hex(20)
         users_collection.insert_one({
             "username": username,
             "email": email,
             "password": hashed_pw,
-            "role": role
+            "role": role,
+            "is_verified": False,
+            "verification_token": token
         })
 
-        return jsonify({"msg": "User created successfully"}), 201
+        # Send verification email asynchronously in a background thread to prevent blocking the signup response
+        threading.Thread(target=send_verification_email, args=(email, token)).start()
+
+        return jsonify({"msg": "Sign up successful! Please check your email to verify your account before logging in."}), 201
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -109,6 +181,10 @@ def login():
         user = users_collection.find_one({"$or": [{"username": login_id}, {"email": login_id}]})
         if not user or not check_password_hash(user["password"], password):
             return jsonify({"error": "Invalid credentials"}), 401
+            
+        # Email verification check (bypass pre-existing users who don't have is_verified field)
+        if user.get("is_verified", True) == False:
+            return jsonify({"error": "Email not verified. Please check your inbox to verify your account."}), 401
             
         if user.get("email") in SUPER_ADMIN_EMAILS:
             if user.get("role") != "super_admin":
@@ -162,7 +238,8 @@ def google_login():
                 "profile_image": picture,
                 "auth_provider": "google",
                 "username": email.split('@')[0], # fallback username
-                "role": role
+                "role": role,
+                "is_verified": True
             }
             insert_res = users_collection.insert_one(new_user)
             new_user["_id"] = insert_res.inserted_id
@@ -196,6 +273,28 @@ def google_login():
             }
         }), 200
 
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/verify-email", methods=["POST"])
+def verify_email():
+    try:
+        data = request.json
+        token = data.get("token")
+        
+        if not token:
+            return jsonify({"error": "Verification token is required"}), 400
+            
+        user = users_collection.find_one({"verification_token": token})
+        if not user:
+            return jsonify({"error": "Invalid or expired verification token"}), 404
+            
+        users_collection.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"is_verified": True}, "$unset": {"verification_token": 1}}
+        )
+        
+        return jsonify({"msg": "Email verified successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -1308,14 +1407,79 @@ def upload_billing_sheet():
         if file.filename.endswith(".csv"):
             df = pd.read_csv(file)
         else:
-            df = pd.read_excel(file)
+            # Smart sheet detection: try to read 'Bill Status'26' if it exists in the workbook
+            xls = pd.ExcelFile(file)
+            sheet_name = None
+            for s in ["Bill Status'26", "Billing Status", "Sheet1"]:
+                if s in xls.sheet_names:
+                    sheet_name = s
+                    break
+            if sheet_name:
+                df = pd.read_excel(file, sheet_name=sheet_name)
+            else:
+                df = pd.read_excel(file)
             
-        df.columns = [str(col).replace(".", "_").replace("$", "_") for col in df.columns]
+        # Clean column headers
+        df.columns = [str(col).strip().replace(".", "_").replace("$", "_") for col in df.columns]
         df = df.fillna("")
         records = json.loads(df.to_json(orient="records", date_format="iso"))
         
+        months = [
+            ("Jan'26", "Remarks"),
+            ("Feb'26", "Remarks_1"),
+            ("Mar'26", "Remarks_2"),
+            ("Apr'26", "Remarks_3"),
+            ("May'26", "Remarks_4"),
+            ("June'26", "Remarks_5"),
+            ("July'26", "Remarks_6"),
+            ("Aug'26", "Remarks_7"),
+            ("Sep'26", "Remarks_8"),
+            ("Oct'6", "Remarks_9"),
+            ("Nov'26", "Remarks_10"),
+            ("Dec'26", "Remarks_11")
+        ]
+        
         if records:
             for record in records:
+                # 1. Normalize columns & fields
+                # 1a. Responsibility -> Handle By
+                if "Responsibility" in record and not record.get("Handle By"):
+                    record["Handle By"] = record["Responsibility"]
+                    
+                # 1b. Oct'26 -> Oct'6
+                if "Oct'26" in record and not record.get("Oct'6"):
+                    record["Oct'6"] = record["Oct'26"]
+                
+                # 1c. Global Remarks distribution if monthly columns are absent
+                is_simple_sheet = "Remarks" in record and "Remarks_1" not in record
+                if is_simple_sheet:
+                    global_remark = record.get("Remarks", "")
+                    # Initialize all monthly remarks to empty strings
+                    for m_key, r_key in months:
+                        if r_key != "Remarks":
+                            record[r_key] = ""
+                    
+                    # Place the global remark in the first pending month
+                    placed = False
+                    for m_key, r_key in months:
+                        status = str(record.get(m_key, "")).strip().lower()
+                        if "pend" in status or status == "pending":
+                            record[r_key] = global_remark
+                            placed = True
+                            break
+                            
+                    # Fallback: place it in the latest month with payment content
+                    if not placed and global_remark:
+                        for m_key, r_key in reversed(months):
+                            val = str(record.get(m_key, "")).strip()
+                            if val != "":
+                                record[r_key] = global_remark
+                                placed = True
+                                break
+                        if not placed:
+                            record["Remarks"] = global_remark
+                
+                # 2. Match record against DB
                 query = {}
                 if record.get("Efile No"):
                     query = {"Efile No": record["Efile No"]}
@@ -1325,13 +1489,38 @@ def upload_billing_sheet():
                     billing_status_collection.insert_one(record)
                     continue
                 
-                # Merge the new row, updating existing or inserting if new
-                billing_status_collection.update_one(
-                    query,
-                    {"$set": record},
-                    upsert=True
-                )
-        return jsonify({"msg": "Billing database re-synchronized successfully"})
+                # 3. Intelligent Non-Destructive Merge (preserve detailed metadata in DB)
+                existing = billing_status_collection.find_one(query)
+                if existing:
+                    update_fields = {}
+                    for k, v in record.items():
+                        if k == "_id":
+                            continue
+                        # Update field if new value is not empty
+                        if v != "":
+                            update_fields[k] = v
+                        # Initialize key as empty if it didn't exist in the database at all
+                        elif k not in existing:
+                            update_fields[k] = ""
+                    if update_fields:
+                        billing_status_collection.update_one(query, {"$set": update_fields})
+                else:
+                    # Brand-new record: Fill in schema defaults so the structure stays clean & uniform
+                    master_fields = [
+                        "Start Date", "End Date", "Days Left", "Duration", 
+                        "Contract No", "Value", "Handle By", "Escalation Metrix"
+                    ]
+                    for mf in master_fields:
+                        if mf not in record:
+                            record[mf] = ""
+                    for m_key, r_key in months:
+                        if m_key not in record:
+                            record[m_key] = ""
+                        if r_key not in record:
+                            record[r_key] = ""
+                    billing_status_collection.insert_one(record)
+                    
+        return jsonify({"msg": "Billing database re-synchronized and merged successfully!"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

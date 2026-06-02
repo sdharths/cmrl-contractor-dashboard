@@ -29,6 +29,94 @@ import BillingView from "./BillingView";
 
 const API = process.env.REACT_APP_API_URL || "http://127.0.0.1:5000";
 
+// ─── Email Verification Screen ──────────────────────────────────────────────
+function EmailVerificationScreen({ token, api, theme, themeToggleBtn, setCurrentView }) {
+  const [status, setStatus] = useState("verifying"); // "verifying" | "success" | "error"
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    if (!token) {
+      setStatus("error");
+      setErrorMessage("No verification token found in the verification link.");
+      return;
+    }
+
+    const verify = async () => {
+      try {
+        // Wait 1.5 seconds to make the UI transition feel high-end and premium
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await axios.post(`${api}/verify-email`, { token });
+        setStatus("success");
+        
+        // Auto redirect to login screen after 3.5 seconds
+        setTimeout(() => {
+          setCurrentView("auth");
+        }, 3500);
+      } catch (err) {
+        setStatus("error");
+        setErrorMessage(
+          err.response?.data?.error || 
+          "Verification failed. The link may have expired or is invalid."
+        );
+      }
+    };
+
+    verify();
+  }, [token, api, setCurrentView]);
+
+  return (
+    <div className="full-screen-center">
+      <div style={{ position: "fixed", bottom: "30px", right: "30px", zIndex: 1000 }}>
+        {themeToggleBtn}
+      </div>
+      <video className="bg-video" autoPlay loop muted>
+        <source src="/new_video_dash -new.mp4" type="video/mp4" />
+      </video>
+      <div className="overlay-content auth-container verification-card">
+        {status === "verifying" && (
+          <div className="verification-state">
+            <div className="modern-spinner"></div>
+            <h2 className="verification-title">Verifying Your Email</h2>
+            <p className="verification-desc">We are validating your activation credentials. Please hold on a moment...</p>
+          </div>
+        )}
+        
+        {status === "success" && (
+          <div className="verification-state animate-fade-in">
+            <div className="success-icon-wrapper">
+              <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                <circle className="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+                <path className="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+              </svg>
+            </div>
+            <h2 className="verification-title text-success">Email Verified!</h2>
+            <p className="verification-desc">Your account is now fully active. Redirecting you to the sign-in page...</p>
+            <button className="btn-primary auth-submit" onClick={() => setCurrentView("auth")} style={{ marginTop: "15px" }}>
+              Go to Sign In
+            </button>
+          </div>
+        )}
+
+        {status === "error" && (
+          <div className="verification-state animate-fade-in">
+            <div className="error-icon-wrapper">
+              <svg className="crossmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                <circle className="crossmark__circle" cx="26" cy="26" r="25" fill="none"/>
+                <path className="crossmark__cross" fill="none" d="M16 16 36 36 M36 16 16 36"/>
+              </svg>
+            </div>
+            <h2 className="verification-title text-danger">Verification Failed</h2>
+            <p className="verification-desc">{errorMessage}</p>
+            <button className="btn-primary auth-submit btn-danger-verify" onClick={() => setCurrentView("auth")} style={{ marginTop: "15px" }}>
+              Back to Sign In
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   // ─── View & Auth State ────────────────────────────────────────────────────
   const [currentView, setCurrentView] = useState("welcome"); // "welcome" | "auth" | "files" | "dashboard"
@@ -39,6 +127,7 @@ export default function App() {
   const [showPassword, setShowPassword] = useState(false);
   const [theme, setTheme] = useState("light");
   const [loading, setLoading] = useState(false);
+  const [verifyToken, setVerifyToken] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [fileSearchQuery, setFileSearchQuery] = useState("");
   const [fileSearchCriteria, setFileSearchCriteria] = useState("filename"); // "filename" | "author"
@@ -188,6 +277,17 @@ export default function App() {
 
   // ─── Init & File Fetch ────────────────────────────────────────────────────
   useEffect(() => {
+    // Check for verification token in URL immediately on page load
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("verify_token");
+    if (token) {
+      setVerifyToken(token);
+      setCurrentView("verify_email");
+      // Clean up the URL address bar immediately
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
     fetchFiles();
     fetchMessages();
     if (currentUser?.role === "admin" || currentUser?.role === "super_admin") {
@@ -854,7 +954,7 @@ export default function App() {
       const endpoint = authMode === "login" ? "/login" : "/signup";
       const res = await axios.post(`${API}${endpoint}`, authForm);
       if (authMode === "signup") {
-        alert("Sign up successful! Please log in.");
+        alert(res.data.msg || "Sign up successful! Please check your email to verify your account before logging in.");
         setAuthMode("login");
         setAuthForm({ ...authForm, password: "", email: "" });
       } else {
@@ -1078,6 +1178,19 @@ export default function App() {
           <h1>{text}</h1>
         </div>
       </div>
+    );
+  }
+
+  // ─── Email Verification Screen ────────────────────────────────────────────
+  if (currentView === "verify_email") {
+    return (
+      <EmailVerificationScreen
+        token={verifyToken}
+        api={API}
+        theme={theme}
+        themeToggleBtn={themeToggleBtn}
+        setCurrentView={setCurrentView}
+      />
     );
   }
 
